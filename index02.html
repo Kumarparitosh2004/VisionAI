@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VisionAI | Advanced Image Analyzer</title>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --bg: #f5f7fb;
+  --surface: #ffffff;
+  --text: #172033;
+  --muted: #778198;
+  --primary: #6255e7;
+  --border: #e8ebf2;
+  --shadow: 0 8px 30px rgba(25,35,70,.05);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: Inter, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+button { font: inherit; cursor: pointer; }
+.app { display: flex; min-height: 100vh; }
+
+.sidebar {
+  width: 245px; background: white; border-right: 1px solid var(--border);
+  padding: 25px 17px; flex-shrink: 0;
+}
+.logo { display:flex; align-items:center; gap:10px; padding: 5px 10px 35px; }
+.logo-icon {
+  width:39px; height:39px; border-radius:12px;
+  display:grid; place-items:center; color:white;
+  background:linear-gradient(135deg,#6255e7,#9b6af5);
+  font-size:21px; font-weight:800;
+}
+.logo h2 { font-size:20px; letter-spacing:-1px; }
+.logo span { color:var(--primary); }
+.nav-label { color:#a0a7b7; font-size:10px; font-weight:800; letter-spacing:1.5px; padding:15px 12px 10px; }
+.nav-item {
+  width:100%; border:0; background:transparent; padding:12px;
+  display:flex; gap:12px; align-items:center; color:#727c91;
+  border-radius:9px; text-align:left; margin:3px 0; font-size:13px;
+}
+.nav-item.active,.nav-item:hover { background:#f0efff; color:var(--primary); }
+.sidebar-bottom { margin-top:45px; padding:15px; background:#f5f4ff; border-radius:12px; }
+.sidebar-bottom p { font-size:11px; color:var(--muted); line-height:1.7; }
+
+main { flex:1; min-width:0; }
+.topbar {
+  height:76px; background:white; border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 35px;
+}
+.topbar h3 { font-size:15px; }
+.status { color:#269b72; font-size:11px; font-weight:700; }
+.status:before { content:""; display:inline-block; width:7px; height:7px; background:#32bd88; border-radius:50%; margin-right:7px; }
+.content { max-width:1450px; margin:auto; padding:32px 35px; }
+.heading { display:flex; justify-content:space-between; align-items:center; gap:15px; margin-bottom:25px; }
+.heading h1 { font-size:26px; letter-spacing:-1px; }
+.heading p { color:var(--muted); font-size:12px; margin-top:7px; }
+.primary,.secondary {
+  border:0; border-radius:9px; padding:12px 17px; font-size:12px; font-weight:700;
+}
+.primary { color:white; background:var(--primary); }
+.primary:hover { background:#5043d0; }
+.secondary { background:white; border:1px solid var(--border); color:#46516a; }
+button:disabled { opacity:.45; cursor:not-allowed; }
+
+.grid { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(270px,.8fr); gap:20px; }
+.card {
+  background:white; border:1px solid var(--border); border-radius:14px;
+  padding:21px; box-shadow:var(--shadow); min-width:0;
+}
+.card-title { font-size:14px; font-weight:700; margin-bottom:17px; }
+.upload-area {
+  border:1.5px dashed #c9c7ed; border-radius:12px; background:#fafaff;
+  min-height:230px; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; text-align:center;
+  padding:25px; transition:.2s;
+}
+.upload-area.drag { background:#eeedff; border-color:var(--primary); }
+.upload-icon {
+  width:55px; height:55px; border-radius:15px; background:#eeedff;
+  display:grid; place-items:center; color:var(--primary); font-size:25px; margin-bottom:14px;
+}
+.upload-area h3 { font-size:14px; }
+.upload-area p { color:var(--muted); font-size:11px; margin:8px 0 15px; }
+#fileInput { display:none; }
+
+.preview-wrap { margin-top:17px; background:#f6f7fa; border-radius:11px; min-height:170px; display:grid; place-items:center; overflow:hidden; }
+#preview { max-width:100%; max-height:360px; object-fit:contain; display:none; }
+.empty-preview { color:#9aa2b4; font-size:12px; }
+.actions { display:flex; gap:9px; flex-wrap:wrap; margin-top:16px; }
+.actions button { flex:1; min-width:110px; }
+
+.stats { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.stat { background:#f8f9fc; padding:15px; border-radius:10px; }
+.stat small { color:var(--muted); font-size:10px; }
+.stat strong { display:block; font-size:19px; margin-top:8px; overflow-wrap:anywhere; }
+.stat .unit { color:var(--muted); font-size:10px; font-weight:500; }
+.color-list { display:flex; gap:9px; flex-wrap:wrap; }
+.color-box { width:45px; height:45px; border-radius:9px; border:1px solid #ddd; position:relative; }
+.color-box span { position:absolute; top:49px; font-size:9px; color:var(--muted); }
+.colors-card { margin-top:18px; }
+.filter-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:9px; }
+.filter-btn { padding:11px 5px; border:1px solid var(--border); background:white; border-radius:9px; font-size:10px; color:#515c72; }
+.filter-btn:hover,.filter-btn.active { border-color:var(--primary); color:var(--primary); background:#f5f4ff; }
+.histogram { width:100%; height:120px; background:#fafbfe; border-radius:8px; }
+.message { color:var(--muted); font-size:11px; margin-top:12px; line-height:1.6; }
+footer { text-align:center; color:#a0a7b7; font-size:10px; padding:30px; }
+
+@media(max-width:850px) {
+ .sidebar { width:190px; }
+ .grid { grid-template-columns:1fr; }
+}
+@media(max-width:600px) {
+ .sidebar { display:none; }
+ .topbar { padding:0 17px; }
+ .content { padding:22px 14px; }
+ .heading { align-items:flex-start; flex-direction:column; }
+ .heading h1 { font-size:22px; }
+ .filter-grid { grid-template-columns:repeat(2,1fr); }
+}
+</style>
+</head>
+
+<body>
+<div class="app">
+
+<aside class="sidebar">
+  <div class="logo"><div class="logo-icon">V</div><h2>Vision<span>AI</span></h2></div>
+  <div class="nav-label">WORKSPACE</div>
+  <button class="nav-item active" data-section="dashboard">◈ Dashboard</button>
+  <button class="nav-item" data-section="upload">▧ Image Analyzer</button>
+  <button class="nav-item" data-section="colors">◉ Color Analysis</button>
+  <button class="nav-item" data-section="filters">✧ Image Filters</button>
+  <div class="nav-label">INFORMATION</div>
+  <button class="nav-item" id="aboutBtn">ⓘ About VisionAI</button>
+  <div class="sidebar-bottom">
+    <strong style="font-size:12px">VisionAI Studio</strong>
+    <p>Smart image analysis and processing directly in your browser.</p>
+  </div>
+</aside>
+
+<main>
+  <header class="topbar">
+    <h3>Image Intelligence Platform</h3>
+    <span class="status">System Ready</span>
+  </header>
+
+  <div class="content">
+    <div class="heading">
+      <div>
+        <h1>Image Analyzer</h1>
+        <p>Upload, analyze and explore your images with VisionAI.</p>
+      </div>
+      <button class="secondary" id="resetBtn">↻ Reset Workspace</button>
+    </div>
+
+    <div class="grid">
+      <section class="card" id="upload">
+        <div class="card-title">Image Workspace</div>
+
+        <div class="upload-area" id="dropArea">
+          <div class="upload-icon">⇧</div>
+          <h3>Upload your image</h3>
+          <p>Drag and drop your image here, or browse your device.</p>
+          <button class="primary" id="browseBtn">Choose Image</button>
+          <input type="file" id="fileInput" accept="image/png,image/jpeg,image/webp,image/gif">
+          <p>PNG, JPG, WEBP or GIF · Maximum 10 MB</p>
+        </div>
+
+        <div class="preview-wrap">
+          <span class="empty-preview" id="emptyText">Your image preview will appear here</span>
+          <img id="preview" alt="Uploaded image preview">
+        </div>
+          <div class="actions">
+  <button class="primary" id="analyzeBtn" disabled>
+    ✧ Analyze Image
+  </button>
+
+  <button class="primary" id="detectBtn" disabled>
+    🤖 Detect Objects
+  </button>
+
+  <button class="secondary" id="downloadBtn" disabled>
+    ↓ Download
+  </button>
+
+  <button class="secondary" id="clearBtn" disabled>
+    Clear
+  </button>
+
+        </div>
+        <p class="message" id="message">Upload an image to begin your analysis.</p>
+        <div class="card colors-card">
+  <div class="card-title">AI Object Recognition</div>
+  <p id="aiStatus">Upload an image to start AI detection.</p>
+  <div id="objectResults"></div>
+</div>
+      </section>
+
+      <section class="card">
+        <div class="card-title">Image Information</div>
+        <div class="stats">
+          <div class="stat"><small>WIDTH</small><strong id="width">—</strong><span class="unit">pixels</span></div>
+          <div class="stat"><small>HEIGHT</small><strong id="height">—</strong><span class="unit">pixels</span></div>
+          <div class="stat"><small>FILE SIZE</small><strong id="size">—</strong><span class="unit">MB / KB</span></div>
+          <div class="stat"><small>FORMAT</small><strong id="format">—</strong><span class="unit">file type</span></div>
+          <div class="stat"><small>BRIGHTNESS</small><strong id="brightness">—</strong><span class="unit">0–255 scale</span></div>
+          <div class="stat"><small>CONTRAST</small><strong id="contrast">—</strong><span class="unit">standard deviation</span></div>
+        </div>
+      </section>
+    </div>
+
+    <section class="card colors-card" id="colors">
+      <div class="card-title">Dominant Color Palette</div>
+      <div class="color-list" id="colorList">
+        <span class="message">Upload and analyze an image to discover its colors.</span>
+      </div>
+    </section>
+
+    <section class="card colors-card" id="filters">
+      <div class="card-title">Image Processing Studio</div>
+      <div class="filter-grid">
+        <button class="filter-btn" data-filter="original">Original</button>
+        <button class="filter-btn" data-filter="grayscale">Grayscale</button>
+        <button class="filter-btn" data-filter="sepia">Sepia</button>
+        <button class="filter-btn" data-filter="invert">Invert</button>
+        <button class="filter-btn" data-filter="brightness">Brighten</button>
+        <button class="filter-btn" data-filter="darken">Darken</button>
+        <button class="filter-btn" data-filter="blur">Blur</button>
+        <button class="filter-btn" data-filter="edges">Edge Detect</button>
+      </div>
+      <p class="message">Select a filter to process your uploaded image. Download to save the result.</p>
+    </section>
+
+    <section class="card colors-card">
+      <div class="card-title">RGB Histogram</div>
+      <canvas class="histogram" id="histogram" width="600" height="120"></canvas>
+      <p class="message">Displays the distribution of red, green and blue pixel values.</p>
+    </section>
+  </div>
+
+  <footer>VISIONAI © 2026 · Browser-Based Image Intelligence Studio</footer>
+</main>
+</div>
+ 
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+
+const fileInput = $("fileInput");
+const preview = $("preview");
+const dropArea = $("dropArea");
+const message = $("message");
+
+let originalImage = null;
+let currentFile = null;
+let canvas = document.createElement("canvas");
+let ctx = canvas.getContext("2d", {willReadFrequently:true});
+let analyzed = false;
+
+$("browseBtn").addEventListener("click", () => fileInput.click());
+
+fileInput.addEventListener("change", e => {
+  if (e.target.files[0]) loadImage(e.target.files[0]);
+});
+
+dropArea.addEventListener("dragover", e => {
+  e.preventDefault();
+  dropArea.classList.add("drag");
+});
+dropArea.addEventListener("dragleave", () => dropArea.classList.remove("drag"));
+dropArea.addEventListener("drop", e => {
+  e.preventDefault();
+  dropArea.classList.remove("drag");
+  if (e.dataTransfer.files[0]) loadImage(e.dataTransfer.files[0]);
+});
+
+function loadImage(file) {
+  if (!file.type.startsWith("image/")) {
+    alert("Please select a valid image file.");
+    return;
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    alert("File size must be less than 10 MB.");
+    return;
+  }
+
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+
+  img.onload = () => {
+    originalImage = img;
+    currentFile = file;
+    preview.src = url;
+    preview.style.display = "block";
+    $("emptyText").style.display = "none";
+    $("analyzeBtn").disabled = false;
+    $("clearBtn").disabled = false;
+    $("detectBtn").disabled = false;
+    $("downloadBtn").disabled = false;
+
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    ctx.drawImage(img,0,0);
+
+    $("width").textContent = img.naturalWidth.toLocaleString();
+    $("height").textContent = img.naturalHeight.toLocaleString();
+    $("size").textContent = file.size > 1024*1024
+      ? (file.size/1024/1024).toFixed(2)+" MB"
+      : (file.size/1024).toFixed(1)+" KB";
+    $("format").textContent = file.type.split("/")[1].toUpperCase();
+    $("brightness").textContent = "—";
+    $("contrast").textContent = "—";
+    $("colorList").innerHTML = '<span class="message">Click Analyze Image to calculate colors.</span>';
+    $("histogram").getContext("2d").clearRect(0,0,600,120);
+    analyzed = false;
+    resetFilterButtons();
+    message.textContent = "Image loaded successfully. Click Analyze Image.";
+    URL.revokeObjectURL(url);
+  };
+
+  img.onerror = () => {
+    alert("Unable to load this image. Try another file.");
+    URL.revokeObjectURL(url);
+  };
+  img.src = url;
+}
+
+function getSample() {
+  const w = Math.min(canvas.width,500);
+  const h = Math.max(1,Math.round(canvas.height*w/canvas.width));
+  const sample = document.createElement("canvas");
+  sample.width = w;
+  sample.height = h;
+  const c = sample.getContext("2d",{willReadFrequently:true});
+  c.drawImage(originalImage,0,0,w,h);
+  return {c,w,h,data:c.getImageData(0,0,w,h)};
+}
+
+$("analyzeBtn").addEventListener("click", () => {
+  if (!originalImage) return;
+
+  try {
+    const {data,w,h} = getSample();
+    const pixels = data.data;
+    let total = 0, sum = 0, sumSq = 0;
+    const bins = Array.from({length:3},()=>new Array(256).fill(0));
+    const colors = new Map();
+
+    for(let i=0;i<pixels.length;i+=4) {
+      const r=pixels[i],g=pixels[i+1],b=pixels[i+2];
+      const lum=.299*r+.587*g+.114*b;
+      sum+=lum; sumSq+=lum*lum; total++;
+      bins[0][r]++; bins[1][g]++; bins[2][b]++;
+
+      const key = [
+        Math.round(r/32)*32,
+        Math.round(g/32)*32,
+        Math.round(b/32)*32
+      ].map(v=>Math.min(255,v)).join(",");
+      colors.set(key,(colors.get(key)||0)+1);
+    }
+
+    const avg=sum/total;
+    const contrast=Math.sqrt(Math.max(0,sumSq/total-avg*avg));
+    $("brightness").textContent=avg.toFixed(1);
+    $("contrast").textContent=contrast.toFixed(1);
+
+    const top=[...colors.entries()].sort((a,b)=>b[1]-a[1]).slice(0,8);
+    $("colorList").innerHTML=top.map(([key])=>{
+      const hex="#"+key.split(",").map(n=>Number(n).toString(16).padStart(2,"0")).join("");
+      return `<div class="color-box" style="background:${hex}" title="${hex}"><span>${hex}</span></div>`;
+    }).join("");
+
+    drawHistogram(bins);
+    analyzed=true;
+    message.textContent="Analysis completed successfully!";
+  } catch(err) {
+    console.error(err);
+    message.textContent="Analysis failed. Try another image.";
+  }
+});
+
+function drawHistogram(bins) {
+  const c=$("histogram"), x=c.getContext("2d");
+  x.clearRect(0,0,c.width,c.height);
+  const max=Math.max(...bins.flat(),1);
+  const colors=["#e65b68","#39a879","#5277e8"];
+  bins.forEach((bin,index)=>{
+    x.beginPath();
+    x.strokeStyle=colors[index];
+    x.lineWidth=1.7;
+    bin.forEach((value,i)=>{
+      const px=i/255*c.width;
+      const py=c.height-(value/max)*(c.height-8);
+      if(i===0)x.moveTo(px,py); else x.lineTo(px,py);
+    });
+    x.stroke();
+  });
+}
+
+function resetFilterButtons() {
+  document.querySelectorAll(".filter-btn").forEach(b=>b.classList.remove("active"));
+}
+
+function applyFilter(type) {
+  if(!originalImage) {
+    alert("Please upload an image first.");
+    return;
+  }
+
+  canvas.width=originalImage.naturalWidth;
+  canvas.height=originalImage.naturalHeight;
+  ctx.filter="none";
+  ctx.drawImage(originalImage,0,0);
+
+  if(type==="grayscale") ctx.filter="grayscale(1)";
+  if(type==="sepia") ctx.filter="sepia(1)";
+  if(type==="invert") ctx.filter="invert(1)";
+  if(type==="brightness") ctx.filter="brightness(1.35)";
+  if(type==="darken") ctx.filter="brightness(.65)";
+  if(type==="blur") ctx.filter="blur(3px)";
+
+  if(type==="edges") {
+    const imageData=ctx.getImageData(0,0,canvas.width,canvas.height);
+    const src=imageData.data;
+    const out=new Uint8ClampedArray(src.length);
+    const w=canvas.width,h=canvas.height;
+    const gray=new Float32Array(w*h);
+    for(let i=0;i<w*h;i++) gray[i]=.299*src[i*4]+.587*src[i*4+1]+.114*src[i*4+2];
+
+    for(let y=1;y<h-1;y++) {
+      for(let x=1;x<w-1;x++) {
+        const i=y*w+x;
+        const gx=-gray[i-w-1]+gray[i-w+1]-2*gray[i-1]+2*gray[i+1]-gray[i+w-1]+gray[i+w+1];
+        const gy=-gray[i-w-1]-2*gray[i-w]-gray[i-w+1]+gray[i+w-1]+2*gray[i+w]+gray[i+w+1];
+        const v=Math.min(255,Math.hypot(gx,gy));
+        const p=i*4;
+        out[p]=out[p+1]=out[p+2]=v;
+        out[p+3]=255;
+      }
+    }
+    imageData.data.set(out);
+    ctx.putImageData(imageData,0,0);
+  } else if(type!=="original") {
+    ctx.drawImage(originalImage,0,0);
+  }
+
+  preview.src=canvas.toDataURL("image/png");
+  message.textContent="Applied "+type+" filter successfully.";
+  document.querySelectorAll(".filter-btn").forEach(b=>{
+    b.classList.toggle("active",b.dataset.filter===type);
+  });
+}
+
+document.querySelectorAll(".filter-btn").forEach(btn=>{
+  btn.addEventListener("click",()=>applyFilter(btn.dataset.filter));
+});
+
+$("downloadBtn").addEventListener("click",()=>{
+  if(!originalImage)return;
+  canvas.toBlob(blob=>{
+    if(!blob){alert("Could not create image.");return;}
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url;
+    a.download="VisionAI-processed.png";
+    a.click();
+    URL.revokeObjectURL(url);
+    message.textContent="Processed image downloaded.";
+  },"image/png");
+});
+
+function resetWorkspace() {
+  originalImage=null;
+  currentFile=null;
+  preview.removeAttribute("src");
+  preview.style.display="none";
+  $("emptyText").style.display="block";
+  fileInput.value="";
+  ["width","height","size","format","brightness","contrast"].forEach(id=>$(id).textContent="—");
+  $("colorList").innerHTML='<span class="message">Upload and analyze an image to discover its colors.</span>';
+  $("histogram").getContext("2d").clearRect(0,0,600,120);
+  $("analyzeBtn").disabled=true;
+  $("downloadBtn").disabled=true;
+  $("clearBtn").disabled=true;
+  $("detectBtn").disabled = true;
+  message.textContent="Workspace reset. Upload a new image.";
+  resetFilterButtons();
+}
+$("clearBtn").addEventListener("click",resetWorkspace);
+$("resetBtn").addEventListener("click",resetWorkspace);
+
+$("aboutBtn").addEventListener("click",()=>{
+  alert("VisionAI is a browser-based image analysis and processing platform. It analyzes image properties, color distribution, brightness, contrast and applies image filters. It does not currently perform AI object recognition.");
+});
+
+document.querySelectorAll(".nav-item[data-section]").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    document.querySelectorAll(".nav-item").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    const target=$(btn.dataset.section);
+    if(target) target.scrollIntoView({behavior:"smooth",block:"start"});
+  });
+});
+let visionModel = null;
+
+async function loadAIModel() {
+  $("aiStatus").textContent = "Loading AI model...";
+
+  try {
+    if (!window.cocoSsd) {
+      throw new Error("AI library not loaded");
+    }
+
+    visionModel = await cocoSsd.load();
+
+    $("aiStatus").textContent =
+      "AI model ready! Upload an image to detect objects.";
+
+  } catch (error) {
+    console.error(error);
+    $("aiStatus").textContent =
+      "Model loading failed. Check your internet connection.";
+  }
+}
+
+loadAIModel();
+
+$("detectBtn").addEventListener("click", async function() {
+
+  if (!originalImage) return;
+
+  if (!visionModel) {
+    $("aiStatus").textContent = "AI model is loading. Please wait.";
+    return;
+  }
+
+  this.disabled = true;
+  this.textContent = "Detecting...";
+
+  const results = $("objectResults");
+  results.innerHTML = "";
+
+  try {
+
+    const predictions = await visionModel.detect(originalImage);
+
+    if (predictions.length === 0) {
+      $("aiStatus").textContent = "No supported objects detected.";
+      return;
+    }
+
+    $("aiStatus").textContent =
+      predictions.length + " objects detected!";
+
+    predictions.sort((a,b) => b.score-a.score);
+
+    predictions.forEach((item,index) => {
+
+      const card = document.createElement("div");
+
+      card.style.cssText =
+        "padding:14px;margin-top:10px;background:#f5f4ff;border-radius:10px;";
+
+      const name = document.createElement("strong");
+      name.textContent = (index+1) + ". " + item.class.toUpperCase();
+
+      const confidence = document.createElement("p");
+      confidence.textContent =
+        "Confidence: " + (item.score*100).toFixed(1) + "%";
+
+      const position = document.createElement("p");
+      position.textContent =
+        "X: " + Math.round(item.bbox[0]) +
+        " | Y: " + Math.round(item.bbox[1]) +
+        " | Width: " + Math.round(item.bbox[2]) +
+        " | Height: " + Math.round(item.bbox[3]);
+
+      confidence.style.cssText =
+        "font-size:12px;color:#6255e7;margin-top:7px;";
+
+      position.style.cssText =
+        "font-size:11px;color:#778198;margin-top:5px;";
+
+      card.append(name,confidence,position);
+      results.appendChild(card);
+    });
+
+  } catch(error) {
+    console.error(error);
+    $("aiStatus").textContent = "Detection failed.";
+  } finally {
+    this.disabled = false;
+    this.textContent = "🤖 Detect Objects";
+  }
+});
+</script>
+</body>
+</html>
